@@ -40,17 +40,38 @@ This technique allows you to remain in control at all times. If at any moment yo
 
 ## Installation
 
-### Install Deno
+### Homebrew
 
-Follow the [Deno installation instructions](https://deno.com/manual/getting_started/installation).
+If you are using `macOS` or `Linux` you can install `sharkey` via Homebrew. This is the preferred way to install.
 
-Follow by testing your installation
+First, install Homebrew as needed:
+
+<https://docs.brew.sh/Installation>
+
+Then install `sharkey`:
+
+```sh
+brew tap grempe/tap
+brew install sharkey
+```
+
+To upgrade:
+
+```sh
+brew upgrade sharkey
+```
+
+### Manually
+
+Install Deno following the [Deno installation instructions](https://deno.com/manual/getting_started/installation).
+
+Testing your installation
 
 ```sh
 deno --version
 ```
 
-### Clone the repository locally
+Clone the `sharkey` repository locally:
 
 ```sh
 # clone the repository
@@ -59,10 +80,15 @@ git clone https://github.com/grempe/sharkey.git
 # change to the sharkey directory
 cd sharkey
 
+# build a local copy
+deno task build-local
+
 # verify you can run it
 ./sharkey -h
 
 ```
+
+NOTE : You'll need to replace the references to run the program from `sharkey` to the locally scoped `./sharkey` in this README if you install manually.
 
 ## Usage
 
@@ -77,7 +103,7 @@ For additional security when generating a new keypair, you can hide the `seed` a
 If you don't know the `seed` and the `privateKey`, and you give away all physical copies of the `shares`, the only way to recover the keys is to convince enough of the shareholders to give them back to you.
 
 ```sh
-./sharkey.ts generate -t 3 -s 5
+sharkey generate -t 3 -s 5
 
 SECRET
 -------------
@@ -123,7 +149,7 @@ If you know the `seed` value you can re-create the same keypair with. In this ex
 Note that the `age` keypair is the same, but the shares are completely different. The creation of the shares is never deterministic, the output is always different even though they can re-combine to the same `seed` value. Mixing shares from different runs will always result in an error.
 
 ```sh
-./sharkey.ts generate -t 2 -s 3 --seed aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
+sharkey generate -t 2 -s 3 --seed aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
 
 SECRET
 -------------
@@ -156,7 +182,7 @@ Share 3 of 3:
 
 ### Recovering an identity from shares
 
-Run `./sharkey.ts combine`. This is an interactive process and you'll be prompted to enter shares, one at a time.
+Run `sharkey combine`. This is an interactive process and you'll be prompted to enter shares, one at a time.
 
 When you've either entered enough shares to meet the threshold (embedded in each share), or if you press `ENTER` on an empty prompt, the program will try to combine your shares and recover the `age` keypair.
 
@@ -167,7 +193,7 @@ You can also use the `--output` option to save the keypair to a file path.
 Entering 2-of-3 shares from the `generate` examples above result in the same keys being output.
 
 ```sh
-./sharkey.ts combine
+sharkey combine
 Welcome to SharKey!
 
 To generate an age keypair, enter your shares at the prompts below.
@@ -193,7 +219,7 @@ If you run the `sharkey generate` command with a known good seed, you should see
 The `seed` value `aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i` should create an `age` identity with the following keys:
 
 ```sh
-./sharkey.ts generate -t 2 -s 3 --seed aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
+sharkey generate -t 2 -s 3 --seed aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
 ```
 
 | KEY   |  |
@@ -201,7 +227,7 @@ The `seed` value `aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU
 | `publicKey`   | `age1qpr733mdcngf8ek8fn860uzwlgguude4n3eln8nttg3ssy95cuwq40phvd` |
 | `secretKey`   | `AGE-SECRET-KEY-1XES6VVUYXQP6U30X2PRRUKXCXHZ0UJ086DZUJ6M3ULJJVTQQMAYQULN3VZ` |
 
-Following this command with an execution of `./sharkey.ts combine` and entering `2` shares from the output of `./sharkey.ts generate` with that known seed should also display the same `publicKey` and `secretKey` values.
+Following this command with an execution of `sharkey combine` and entering `2` shares from the output of `sharkey generate` with that known seed should also display the same `publicKey` and `secretKey` values.
 
 ## FAQ
 
