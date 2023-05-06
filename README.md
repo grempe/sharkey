@@ -308,7 +308,7 @@ Steps for a public release:
 * Ensure the `version` in [sharkey.ts](sharkey.ts) is updated to the desired version.
 * Create a new `tag` (not a new Release!) where the tag name follows the form `vx.x.x` where the `x` represents a semantic version number. Example: `git tag -a v0.0.1 -m "v0.0.1"` followed by `git push origin v0.0.1`
 * Once the `tagged-release.yml` workflow succeeds, a new release, with an automatic changelog will have been created.
-* One of the build artifacts is the `CHECKSUMS-SHA2-256.txt` file, which contains the `SHA2-256` checksum of each of the build files. These checksum values should be transferred to the [homebrew-tap](https://github.com/truestamp/homebrew-tap/blob/main/Formula/truestamp-cli.rb) Homebrew Formula and pushed and tested.
+* One of the build artifacts is the `CHECKSUMS-SHA2-256.txt` file, which contains the `SHA2-256` checksum of each of the build files. These checksum values should be transferred to the [homebrew-tap](https://github.com/grempe/homebrew-tap/blob/main/Formula/sharkey.rb) Homebrew Formula and pushed and tested.
 
 ## License
 
