@@ -54,7 +54,7 @@ const SEED_LENGTH = 32
 const SALT_LENGTH = 16
 
 // RELEASE VERSION : BUMP VERSION HERE
-const VERSION = "0.0.2"
+const VERSION = "0.0.3"
 
 /**
  * Converts a JavaScript Date object to a 16-byte Uint8Array.

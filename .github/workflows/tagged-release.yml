@@ -1,0 +1,39 @@
+name: "tagged-release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  tagged-release:
+    name: "Tagged Release"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.33.2
+      - name: Build RELEASE.txt
+        run: echo ${{ github.sha }} > RELEASE.txt
+      - name: Log Release
+        run: cat RELEASE.txt
+      - name: Build
+        run: deno task build
+      - name: Build CHECKSUMS-SHA2-256.txt
+        run: find ./build -type f -exec sha256sum {} \; > CHECKSUMS-SHA2-256.txt
+      - name: Log Checksums
+        run: cat CHECKSUMS-SHA2-256.txt
+      - uses: "Shinerising/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            CHECKSUMS-SHA2-256.txt
+            RELEASE.txt
+            README.md
+            build/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
