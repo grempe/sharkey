@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-env=SEED --allow-write --allow-read
+#!/usr/bin/env -S deno run --unstable --allow-env=SEED --allow-write --allow-read
 
 /**
  * Copyright (c) 2023 Glenn Rempe <glenn@rempe.us>
@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 
+import * as base64 from "https://deno.land/std@0.185.0/encoding/base64.ts"
 import { crypto } from "https://deno.land/std@0.185.0/crypto/mod.ts"
 import {
   Command,
@@ -29,7 +30,7 @@ import {
 } from "https://deno.land/x/cliffy@v0.25.7/command/mod.ts"
 import {
   prompt,
-  Secret,
+  Input
 } from "https://deno.land/x/cliffy@v0.25.7/prompt/mod.ts"
 import { colors } from "https://deno.land/x/cliffy@v0.25.7/ansi/colors.ts"
 
@@ -37,7 +38,7 @@ import {
   base32crockford,
   bech32,
 } from "https://esm.sh/@scure/base@1.1.1?pin=v118"
-import { decode, encode } from "https://esm.sh/@stablelib/base64@1.0.1?pin=v118"
+
 import { generateKeyPairFromSeed } from "https://esm.sh/@stablelib/x25519@1.0.1?pin=v118"
 import {
   combine,
@@ -48,6 +49,9 @@ import {
 } from "https://esm.sh/@stablelib/tss@1.0.1?pin=v118"
 import { deriveKey } from "https://esm.sh/@stablelib/scrypt@1.0.1?pin=v118"
 import { wipe } from "https://esm.sh/@stablelib/wipe@1.0.1?pin=v118"
+import { equal } from "https://esm.sh/@stablelib/constant-time@1.0.1?pin=v118"
+
+import {bytesToPassphrase, passphraseToBytes} from "npm:niceware-ts@0.0.5"
 
 const MIN_SHARES = 1
 const SEED_LENGTH = 32
@@ -55,6 +59,8 @@ const SALT_LENGTH = 16
 
 // RELEASE VERSION : BUMP VERSION HERE
 const VERSION = "0.0.3"
+
+const base32CrockfordRegex = /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{32,256}$/
 
 /**
  * Converts a JavaScript Date object to a 16-byte Uint8Array.
@@ -236,7 +242,7 @@ await new Command()
     let decodedSeed
     if (options.seed) {
       try {
-        decodedSeed = decode(options.seed)
+        decodedSeed = base64.decode(options.seed)
       } catch (error) {
         throw new ValidationError(
           `Seed must be a Base64 encoded string. ${error.message}`
@@ -254,7 +260,7 @@ await new Command()
 
     if (options.threshold > options.shares) {
       throw new ValidationError(
-        `Threshold must be less than or equal to the number of shares (got ${options.threshold} threshold and ${options.shares} shares)`
+        `Threshold must be less than or equal to the total number of shares (got ${options.threshold} threshold and ${options.shares} shares)`
       )
     }
 
@@ -281,7 +287,7 @@ await new Command()
     wipe(stretchedSeed)
 
     const secretOutput = `
-seed             ${options.displaySeed ? encode(seed) : "********"}
+seed             ${options.displaySeed ? base64.encode(seed) : "********"}
 age secretKey    ${options.displaySecretKey ? identity.secretKey : "********"}
 `
 
@@ -305,10 +311,19 @@ age publicKey    ${identity.publicKey}
     console.log(``)
 
     shares.map((share, index) => {
-      const encodedShare = base32crockford.encode(share)
+      console.log(colors.dim(`--`))
       console.log(colors.dim(`Share ${index + 1} of ${options.shares}:`))
       console.log(colors.dim(`--`))
-      console.log(colors.bold.yellow(encodedShare))
+
+      console.log(``)
+      console.log(`Base32`)
+      console.log(colors.bold.yellow(base32crockford.encode(share)))
+
+      console.log(``)
+      console.log(`Passphrase`)
+      const sharePassphrase = bytesToPassphrase(share).join(" ")
+      console.log(colors.bold.yellow(sharePassphrase))
+
       console.log(``)
     })
   })
@@ -328,15 +343,32 @@ age publicKey    ${identity.publicKey}
   .action(async (options) => {
     const shares: Uint8Array[] = []
 
-    console.log(colors.bold.underline.blue("Welcome to SharKey!"))
+    console.log(colors.blue(`
+
+    ███████ ██   ██  █████  ██████  ██   ██ ███████ ██    ██ 
+    ██      ██   ██ ██   ██ ██   ██ ██  ██  ██       ██  ██  
+    ███████ ███████ ███████ ██████  █████   █████     ████   
+         ██ ██   ██ ██   ██ ██   ██ ██  ██  ██         ██    
+    ███████ ██   ██ ██   ██ ██   ██ ██   ██ ███████    ██    
+                                                             
+    `))
 
     console.log(
       colors.dim(`
-To generate an age keypair, enter your shares at the prompts below.
-Once the required number of shares is entered or an empty line is
-submitted, the shares will be re-combined. If any shares are invalid
-or the threshold is not met, an error will occur and you'll need to
-try again.
+Welcome to SharKey, a tool for recovering age keypairs from
+secret shares. To recover a secret keypair, enter your shares
+at the prompt below. Once the expected number of shares are entered,
+an attempt will be made to re-combine the shares and recover the
+keypair.
+
+If any shares are invalid, unmatched with the others, an error
+message will be shown.
+
+Enter shares one at a time by typing or pasting, pressing return after
+each one.
+
+To exit, press control-c.
+
 `)
     )
 
@@ -345,68 +377,73 @@ try again.
       {
         name: "share",
         message: "share",
-        hint: "Paste one share [return when done, or control-c to exit]",
-        type: Secret,
+        hint: `Enter a single share [return to continue]`,
+        type: Input,
         validate: (share) => {
-          // allow empty value to end loop
-          if (share.length === 0) {
-            return true
-          }
+          let tempShare: Uint8Array = new Uint8Array()
 
-          // fix any typos in Base32 encoding
-          const shareClean = cleanBase32(share)
-
-          // validate that shareClean is valid Base32 Crockford encoded data (32-256 characters) using a regex test
-          const base32CrockfordRegex =
-            /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{32,256}$/
-          if (!base32CrockfordRegex.test(shareClean)) {
-            return "Share is not valid Base32 Crockford encoded data (32-256 characters)."
+          if (share.trim() === "") {
+            return "Invalid share. Empty string."
           }
 
           try {
-            base32crockford.decode(shareClean)
+            tempShare = base32CrockfordRegex.test(cleanBase32(share)) ? base32crockford.decode(cleanBase32(share)) : passphraseToBytes(share)
           } catch (error) {
-            return `Share is not valid Base32 Crockford encoded data. ${error.message}`
+            return `Invalid share. ${error.message}`
+          }
+
+          try {
+            readThreshold(tempShare)
+          } catch (error) {
+            return `Invalid share, unable to read threshold value. ${error.message}`
+          }
+
+          try {
+            readIdentifier(tempShare)
+          } catch (error) {
+            return `Invalid share, unable to read identifier value. ${error.message}`
+          }
+
+          if (shares.length > 0) {
+            const firstShare = shares[0]
+            const firstShareIdentifier = readIdentifier(firstShare)
+            const firstShareThreshold = readThreshold(firstShare)
+            const tempShareIdentifier = readIdentifier(tempShare)
+            const tempShareThreshold = readThreshold(tempShare)
+
+            if (!equal(firstShareIdentifier, tempShareIdentifier)) {
+              return `Invalid share, identifier mismatch. Expected ${firstShareIdentifier}, got ${tempShareIdentifier}.`
+            }
+
+            if (firstShareThreshold !== tempShareThreshold) {
+              return `Invalid share, threshold mismatch. Expected ${firstShareThreshold}, got ${tempShareThreshold}.`
+            }
           }
 
           // valid share format
           return true
         },
         after: async ({ share }, next) => {
-          if (share && share.length > 0) {
-            shares.push(base32crockford.decode(cleanBase32(share)))
+          if (share) {
+            const trimmedShare = share.trim()
+            const decodedShare = base32CrockfordRegex.test(cleanBase32(trimmedShare)) ? base32crockford.decode(cleanBase32(trimmedShare)) : passphraseToBytes(trimmedShare)
+            shares.push(decodedShare)
 
             if (
-              (shares.length >= 1 &&
+              (shares.length > 0 &&
                 shares.length >= readThreshold(shares[0])) ||
               shares.length >= MAX_SHARES
             ) {
-              await next() // end prompt loop
+              await next() // end prompt loop, try to combine
             } else {
-              await next("share") // loop back
+              await next("share") // loop back, prompt for another share
             }
-          } else {
-            await next() // end prompt loop
           }
         },
       },
     ])
 
-    if (shares.length < 1 || shares.length > MAX_SHARES) {
-      throw new ValidationError(
-        `At least 1 shares, but no more than ${MAX_SHARES}, are required to recover the secret encryption key (got ${shares.length}).`
-      )
-    }
-
-    if (shares.length < readThreshold(shares[0])) {
-      throw new ValidationError(
-        `At least ${readThreshold(
-          shares[0]
-        )} shares are required to recover the secret encryption key (got ${
-          shares.length
-        }).`
-      )
-    }
+    console.log(colors.dim(`\nProcessing...\n`))
 
     const seedCreatedAtBytes = readIdentifier(shares[0])
     const seedCreatedAt = uint8ArrayToDate(seedCreatedAtBytes)
@@ -415,15 +452,14 @@ try again.
     try {
       seed = combine(shares)
     } catch (error) {
-      throw new ValidationError(`Unable to combine shares. ${error.message}`)
+      throw new Error(`Error, failed to combine shares. ${error.message}`)
     }
 
-    // seed must be SEED_LENGTH + SALT_LENGTH bytes in length
     if (seed.length !== SEED_LENGTH + SALT_LENGTH) {
-      throw new ValidationError(
-        `Seed recovered must be ${
+      throw new Error(
+        `Error, invalid seed length. Expected ${
           SEED_LENGTH + SALT_LENGTH
-        } bytes in length (got ${seed.length} bytes).`
+        } bytes (got ${seed.length} bytes).`
       )
     }
 
@@ -437,8 +473,8 @@ try again.
     try {
       identity = generateAgeIdentityFromSeed(stretchedSeed)
     } catch (error) {
-      throw new ValidationError(
-        `Unable to generate age identity. ${error.message}`
+      throw new Error(
+        `Error, unable to generate age identity. ${error.message}`
       )
     }
     wipe(stretchedSeed)
@@ -456,8 +492,8 @@ try again.
         })
         console.error(`Public key: ${identity.publicKey}`)
       } catch (error) {
-        throw new ValidationError(
-          `Unable to write output to file. ${error.message}`
+        throw new Error(
+          `Error, unable to write output to file. ${error.message}`
         )
       }
     } else {

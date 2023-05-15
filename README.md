@@ -1,14 +1,14 @@
 # Sharkey
 
-Sharkey is a [TypeScript](https://www.typescriptlang.org/)-based CLI utility that uses [Deno](https://deno.com/runtime) to generate a random [age](https://age-encryption.org/) encryption identity keypair. The [age](https://age-encryption.org/) secret key is split into shares, which can only be recovered when a minimum number of shareholders collaborate. This tool is ideal for secure data encryption to a public key, only decryptable by a minimum number of shareholders.
+Sharkey is a [TypeScript](https://www.typescriptlang.org/)-based CLI utility that uses [Deno](https://deno.com/runtime) to generate a random [age](https://age-encryption.org/) public key encryption identity keypair. The [age](https://age-encryption.org/) secret key is split into shares, which can only be recovered when a minimum number of shareholders collaborate. This tool is ideal for secure data encryption to a public key, only decryptable by a threshold number of shareholders.
 
 ## The problem
 
 Let's assume, for example, that you want to make your password manager's passphrase available to the person(s) you have designated as your "digital executor" in your last will and testament.
 
-Your password manager likely contains every sensitive credential needed to steal not only your identity, but many of the assets you own. You must be sure that your plan protects against ever revealing its contents, until you want it revealed.
+Your password manager likely contains every sensitive credential needed to steal not only your identity, but many of the assets you own. You must be sure that your plan protects against ever revealing its contents, until they should be to the right person.
 
-The easiest way to do this would be to write down the passphrase and store it with your important papers. Sounds simple right? However, this method is not only insecure, it is unlikely to even work when it is needed most.
+The easiest way to do this would be to write down the passphrase and store it with your important papers. Sounds simple right? However, this method is not only insecure, it risks not working when it is needed most.
 
 Over a timescale of years can you be certain that:
 
@@ -18,25 +18,25 @@ Over a timescale of years can you be certain that:
 * The paper record won't be destroyed in a fire or flood?
 * The paper record won't be stolen (and used by the thief)?
 
-Since this method is fragile and we don't want to give `superuser` access over our lives to others, clearly this method won't work without taking on a great deal of risk.
+Since this method is fragile and we don't want to give god level access over our lives to others, clearly this method isn't safe or reliable.
 
 ## A better way
 
-Thankfully, this can be done more safely. Here's an example scenario:
+Thankfully, there's a better way. Here's an example scenario:
 
-1. Use `sharkey` to generate an [age](https://age-encryption.org/) encryption identity keypair deterministically from a random secret seed value.
-1. Instruct `sharkey` to split the seed into ten shares, where any six of the ten shares together can recover the encryption identity. Any fewer get nothing.
+1. Use `sharkey` to generate an [age](https://age-encryption.org/) encryption identity keypair deterministically from a random secret seed value that no one knows (maybe not even you).
+1. Instruct `sharkey` to split the seed into ten shares, where any six of the ten shares combined together can recover the encryption identity. Any fewer get nothing.
 1. Provide one share to each of the ten closest members of your immediate family, your closest friends, and your lawyer. Trust some more than others? Give them more of the shares, thus requiring fewer collaborators.
 1. Instruct each recipient to only provide their share to your spouse or lawyer (in that order) when they are satisfied that you are actually no longer with us.
-1. Using the public key, create an [age](https://age-encryption.org/) encrypted file that contains your passphrase.
+1. Using the public key, create an [age](https://age-encryption.org/) encrypted file that contains your passphrase. You can continue to add information to this file without a secret key.
 
-This way, you know that at least six of these trusted people would need to collude with each other in order to improperly gain access to your secrets.
+Using this technique you can rest assured that at least six of these trusted people would need to collude with each other in order to improperly gain access to your secrets.
 
 Now, you can go about your life. periodically updating an encrypted file that contains your passphrase. You can print or publish this file in a place where your spouse or lawyer knows to find it. Include with it the list of shareholders and how to contact them. You don't have to protect it or worry about it being stolen or destroyed since it is fully encrypted and can be easily recreated.
 
-When you pass, your spouse or lawyer collects the shares and recreates the identity privateKey that allows them to decrypt your secrets at the appropriate time.
+When you pass, your spouse or lawyer collects the shares and recreates the identity `privateKey` that allows them to decrypt your secrets.
 
-This technique allows you to remain in control at all times. If at any moment you no longer trust anyone in the group, simply change the passphrase of your password manager. At that moment, the shares and the encrypted file become useless. Now, you can start over and generate a new age identity, a new set of shares, and a new encrypted file to be distributed to a new, more trusted group.
+This way you to remain in control at all times. If at any moment you no longer trust anyone in the group, simply change the passphrase of your password manager. At that moment, the shares and the encrypted file become useless even if decrypted. Now, you can start over and generate a new age identity, a new set of shares, and a new encrypted file to be distributed to a new, more trusted group.
 
 ## Installation
 
@@ -98,9 +98,9 @@ A new keypair with shares that allow any 3 of 5 shares to re-create.
 
 #### Security Tip
 
-For additional security when generating a new keypair, you can hide the `seed` and/or the `secretKey` values from the output with the `--no-display-seed` and `--no-display-secret-key` flags. This means that even you won't know the `seed` value used to re-create the keypair without combining `shares`, and you won't know the `privateKey` needed to decrypt data encrypted to the `publicKey` of that keypair.
+For maximum security when generating a new keypair, you can hide the `seed` and/or the `secretKey` values from the output with the `--no-display-seed` and `--no-display-secret-key` flags. This means that even you won't know the `seed` value used to re-create the keypair without combining the generated `shares`, and you won't know the `privateKey` needed to decrypt data encrypted to the `publicKey` of that keypair.
 
-If you don't know the `seed` and the `privateKey`, and you give away all physical copies of the `shares`, the only way to recover the keys is to convince enough of the shareholders to give them back to you.
+If you don't know the `seed` and the `privateKey`, and you give away all physical copies of the `shares`, the only way to recover the keys is to convince enough of the shareholders to give them back to you. This is like a lockbox that you can put items into, but it can only be opened by the trusted group.
 
 ```sh
 sharkey generate -t 3 -s 5
@@ -144,9 +144,9 @@ Share 5 of 5:
 
 #### Optional
 
-If you know the `seed` value you can re-create the same keypair with. In this example we do that while changing the configuration to allow any `2-of-3` shares to re-create instead of any `3-of-5`.
+If you know the `seed` value you can re-create the same `age` keypair with it. In this example we do that while changing the configuration to allow any `2-of-3` shares to re-create instead of any `3-of-5`.
 
-Note that the `age` keypair is the same, but the shares are completely different. The creation of the shares is never deterministic, the output is always different even though they can re-combine to the same `seed` value. Mixing shares from different runs will always result in an error.
+Note that the `age` keypair is the same, but the shares are completely different and incompatible with any others. The re-creation of the `age` identity is deterministic, but the shares are different every time. Attempting to `combine` shares from different sets will always result in an error.
 
 ```sh
 sharkey generate -t 2 -s 3 --seed aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
