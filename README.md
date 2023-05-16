@@ -92,92 +92,152 @@ NOTE : You'll need to replace the references to run the program from `sharkey` t
 
 ## Usage
 
-### Generating a new identity and shares
-
-A new keypair with shares that allow any 3 of 5 shares to re-create.
-
-#### Security Tip
+### Security Tip
 
 For maximum security when generating a new keypair, you can hide the `seed` and/or the `secretKey` values from the output with the `--no-display-seed` and `--no-display-secret-key` flags. This means that even you won't know the `seed` value used to re-create the keypair without combining the generated `shares`, and you won't know the `privateKey` needed to decrypt data encrypted to the `publicKey` of that keypair.
 
-If you don't know the `seed` and the `privateKey`, and you give away all physical copies of the `shares`, the only way to recover the keys is to convince enough of the shareholders to give them back to you. This is like a lockbox that you can put items into, but it can only be opened by the trusted group.
+If you don't know the `seed` and the `privateKey`, and you give away all physical copies of the `shares`, the only way to recover the keys is to convince enough of the shareholders to give shares back to you and `combine` them. This is like a lockbox that you can put items into, but it can only be opened by the trusted group.
 
-```sh
-sharkey generate -t 3 -s 5
+### Generating a new identity and shares
 
-SECRET
--------------
+A new keypair with shares that allow any 2 of 3 shares to re-create.
 
-seed             aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
-age secretKey    AGE-SECRET-KEY-1XES6VVUYXQP6U30X2PRRUKXCXHZ0UJ086DZUJ6M3ULJJVTQQMAYQULN3VZ
-
-PUBLIC
--------------
-
-threshold        3-of-5
-created at       2023-05-06T19:45:54.972Z
-age publicKey    age1qpr733mdcngf8ek8fn860uzwlgguude4n3eln8nttg3ssy95cuwq40phvd
-
-SHARES
--------------
-
-Share 1 of 5:
---
-000031ZJK5RHR000000000000010602H040YWNQ0CJH790MRP24JYWVHG5PYCJY8Z70VHBK9FJ375G4KHXK0D5YHHTE94H3VESF2PYSFPS92D28C6FN2FANWDA5KCQFGSVPHDYV0GKHZ9KCCETVSPJP2A1EX977QNG
-
-Share 2 of 5:
---
-000031ZJK5RHR000000000000010602H0B6J56HCN1QBGKJMFH2Y7FXX9PGJN1R46M6Q8RN5P15BW32Z8ENCMPRX8985X25QQA9EFDZ3FAFEMHE0ZWKEPSKGMS3ZN49W08GXMDXC90QKG0A0Q9XNF1GEKJ8HGM1VC0
-
-Share 3 of 5:
---
-000031ZJK5RHR000000000000010602H0EK4KWA7RC2X699Z2WQ8HN6P4V543V3FBSK1Y2EEVCGXASSM530T2C3P54XKBRYWT7WRSQ4827TR2BNBJH6R038VSMP93YJQD55B2Q674D256THBT483SVB5YZX76ETG1C
-
-Share 4 of 5:
---
-000031ZJK5RHR000000000000010602H0KG0ZDR1GN1SARVSA5MCX4MGC260FAH930G5JKW8KNKS68BJDT3YEXHGDXYQ79CTJYZWN6PEAYSWET7DT85WCJTXHDNDFF0H5W6FE6M1CM11AB3DJXB7NAS3P6Y3AZ8P9M
-
-Share 5 of 5:
---
-000031ZJK5RHR000000000000010602H0P5P9Q3AXRMFW20J781TBYFV1FKPSGA2ED5K4973YR6FGJGS0QP8R7AV0GB1HKQHZKAA3WD57KCAR0W6Q5GAT81PW00VSNVT8HKSRWFA1SMQWHR6ZGYH3G28VBBNW5KX4R
-```
-
-#### Optional
-
-If you know the `seed` value you can re-create the same `age` keypair with it. In this example we do that while changing the configuration to allow any `2-of-3` shares to re-create instead of any `3-of-5`.
-
-Note that the `age` keypair is the same, but the shares are completely different and incompatible with any others. The re-creation of the `age` identity is deterministic, but the shares are different every time. Attempting to `combine` shares from different sets will always result in an error.
-
-```sh
-sharkey generate -t 2 -s 3 --seed aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
+```txt
+% sharkey generate -t 2 -s 3
 
 SECRET
 -------------
 
-seed             aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
-age secretKey    AGE-SECRET-KEY-1XES6VVUYXQP6U30X2PRRUKXCXHZ0UJ086DZUJ6M3ULJJVTQQMAYQULN3VZ
+seed             jO5MXtZs+b0ax9EwVZgE1m44cPS6TN8/wNiv798Bt/lj3igbpUh90SwlQ/0Xu6Fu
+age secretKey    AGE-SECRET-KEY-1TU75FFFFWLK2ZZFLFHCLJL0RGKD4Z7733CH3NJ92FN9SP4EXU7HQQZS3PD
 
 PUBLIC
 -------------
 
 threshold        2-of-3
-created at       2023-05-06T19:50:57.556Z
-age publicKey    age1qpr733mdcngf8ek8fn860uzwlgguude4n3eln8nttg3ssy95cuwq40phvd
+created at       2023-05-16T18:54:40.500Z
+age publicKey    age1eml9qdxzpw27dgd8z83wl98r68gz430fmp387gr48guycen53ejqw2qvd8
 
 SHARES
 -------------
 
-Share 1 of 3:
---
-000031ZJKR7H8000000000000010402H07XH9B0TKSC8WY3299SXB2CBFEBHSC9J0CXM4N4KGSY8GEK9EPEFRV9BEHK6HFM1HJJD30EN9JMDRWZPS48DTM26J1RWS9RA6GBYR0CTFRCGWDVPHH6P3C1RNAKJWSGDAR
+---------------------------------------- CUT HERE ----------------------------------------
 
-Share 2 of 3:
---
-000031ZJKR7H8000000000000010402H099VR15J6VR2DM6AWBDQT893TCZV86CTNE9YNZ1V5VA214P1VMT59HC3VK7C05H94G67JABXWG079PTYC6W7BY7E73CP83X2KJZM9A9JTTRTD7YY4KJWJ64G087RDKN5ZR
+Share     : #1 of 2-of-3 scheme
+Timestamp : 2023-05-16T18:54:40.000Z
+ID        : FBE9NCE5TEW9C
+URL       : https://github.com/grempe/sharkey
+VERSION   : 0.0.3
 
-Share 3 of 3:
+
+INSTRUCTIONS:
+
+This is a secret share. Keep it safe, and don't provide it to anyone unless they
+can confirm knowledge of the timestamp and ID associated with this share. There are
+3 shares in total, any 2 of which are needed to re-create the secret.
+
+You may have received additional instructions from the person who generated this
+share. If so, please carefully follow them.
+
+You should store this share in a safe place, and make sure it is backed up. You
+may want to store it electronically, and also print it for safekeeping. Wherever
+you store it, make sure unauthorized people cannot access it.
+
+The share is encoded in two different formats for convenience. Either one
+can be used to help re-create the secret.
+
+Base32 Crockford Encoded Share
 --
-000031ZJKR7H8000000000000010402H0F12V593MXGVEGAVED5ESC5J8AQ2B20B7817PVDAQX2V20TG9JJWAN0J9NFN31XRPPEYHE7CEP8YAJPFY0MY8TBZN54FB7HK1MQDAE538WG3E3JFPNT5H281JEF1EQSMDW
+E38P6S0000000YPWKARWBMXRJR10402H04QMVVZXEQ7NM7NSCHS97XHVMXTWV6YKAWCYYZ4WCDXGRK3WM8A5NG3XHEW0DTYYEA7RDR2YPGC05K93MBCKA68VVTX652201WQ6HTWJT32BS6A3FA752YMBY172VNWGQR
+--
+
+Passphrase Encoded Share
+--
+interpreted hereditary a a lentando pal semantical reobtaining affluently achromatism admonisher feral wordperfect sociologist catling hirsutism occur dishonorably karate paraplegic galahad unmannerly partake letterer fancy pimplier gloomful lockout remigrate uncivilized irreproachably mimeoing gull broadaxe slipup pivot deifier campaigned respectably mislabelled bedizen idly numbing seaquake overprotection legging flowchart muling festering stripiest roentgenoscopic pad safely
+--
+
+
+---------------------------------------- CUT HERE ----------------------------------------
+
+Share     : #2 of 2-of-3 scheme
+Timestamp : 2023-05-16T18:54:40.000Z
+ID        : FBE9NCE5TEW9C
+URL       : https://github.com/grempe/sharkey
+VERSION   : 0.0.3
+
+
+INSTRUCTIONS:
+
+This is a secret share. Keep it safe, and don't provide it to anyone unless they
+can confirm knowledge of the timestamp and ID associated with this share. There are
+3 shares in total, any 2 of which are needed to re-create the secret.
+
+You may have received additional instructions from the person who generated this
+share. If so, please carefully follow them.
+
+You should store this share in a safe place, and make sure it is backed up. You
+may want to store it electronically, and also print it for safekeeping. Wherever
+you store it, make sure unauthorized people cannot access it.
+
+The share is encoded in two different formats for convenience. Either one
+can be used to help re-create the secret.
+
+Base32 Crockford Encoded Share
+--
+E38P6S0000000YPWKARWBMXRJR10402H0B8V6483HCRT9R27KA66T265B65K6S9DN7KH30K2KP2Z5CM2BKNA8FM3EN3FG590HHRQG7N09BKFRCYXBGKWQSZ54129RXNYY789C5BC5RX44SXXGHRAZ13N1TRD6ABE80
+--
+
+Passphrase Encoded Share
+--
+interpreted hereditary a a lentando pal semantical reobtaining affluently achromatism alcalde recharting allotropic dabbing tenderly paginal indulgence seedpod motley holographic privater bide height microhm reavow gravidly plunker mealier enzyme bongoist murkiest lactose pewterer treachery decolonizing grabbed skillfully touchily empowerment kinesiologic untangled organized incrusted dirgeful hydric menarche quizzer judgmatic rant conjunction drought pad safely
+--
+
+
+---------------------------------------- CUT HERE ----------------------------------------
+
+Share     : #3 of 2-of-3 scheme
+Timestamp : 2023-05-16T18:54:40.000Z
+ID        : FBE9NCE5TEW9C
+URL       : https://github.com/grempe/sharkey
+VERSION   : 0.0.3
+
+
+INSTRUCTIONS:
+
+This is a secret share. Keep it safe, and don't provide it to anyone unless they
+can confirm knowledge of the timestamp and ID associated with this share. There are
+3 shares in total, any 2 of which are needed to re-create the secret.
+
+You may have received additional instructions from the person who generated this
+share. If so, please carefully follow them.
+
+You should store this share in a safe place, and make sure it is backed up. You
+may want to store it electronically, and also print it for safekeeping. Wherever
+you store it, make sure unauthorized people cannot access it.
+
+The share is encoded in two different formats for convenience. Either one
+can be used to help re-create the secret.
+
+Base32 Crockford Encoded Share
+--
+E38P6S0000000YPWKARWBMXRJR10402H0DS11CN05290EGZ474QWXAV6Z8M91HME192B48E17RK52491ZX4GF790TVJNQDM35Z9DQF83X52NZ43YZY26GH26GFKKZN8XA9SKBDPFHPCY3H0Y4Z9GR9YPNM9Q12PDWC
+--
+
+Passphrase Encoded Share
+--
+interpreted hereditary a a lentando pal semantical reobtaining affluently achromatism alleviative beseeching petrographic northeast embarrassment dictaphone snobbier hulloed condemned sentinel attractant reaping sandaled colonelship beveled youthen archeology chez towery regularizer cruse suspensive alternately endothermal noncontradictory zealously hypnotist entertainer trendily steadying foolhardier demerited soggily overwhelm scrimpiest composition backspacing storeroom blimpish morn timework pad safely
+--
+```
+
+#### Optional
+
+If you know the `seed` value you can re-create the same `age` keypair with it.
+
+Note that the `age` keypair is the same, but the shares are completely different and incompatible with any others. The re-creation of the `age` identity is deterministic, but the shares are different every time. Attempting to `combine` shares from different sets will always result in an error as they don't share the same `ID`.
+
+```sh
+sharkey generate -t 2 -s 3 --seed jO5MXtZs+b0ax9EwVZgE1m44cPS6TN8/wNiv798Bt/lj3igbpUh90SwlQ/0Xu6Fu
+...
 ```
 
 ### Recovering an identity from shares
@@ -192,22 +252,43 @@ You can also use the `--output` option to save the keypair to a file path.
 
 Entering 2-of-3 shares from the `generate` examples above result in the same keys being output.
 
-```sh
-sharkey combine
-Welcome to SharKey!
+```txt
+% sharkey combine
 
-To generate an age keypair, enter your shares at the prompts below.
-Once the required number of shares is entered or an empty line is
-submitted, the shares will be re-combined. If any shares are invalid
-or the threshold is not met, an error will occur and you'll need to
-try again.
 
- ? share › ******************************************************************************************************************************************************************
- ? share › ******************************************************************************************************************************************************************
+    ███████ ██   ██  █████  ██████  ██   ██ ███████ ██    ██ 
+    ██      ██   ██ ██   ██ ██   ██ ██  ██  ██       ██  ██  
+    ███████ ███████ ███████ ██████  █████   █████     ████   
+         ██ ██   ██ ██   ██ ██   ██ ██  ██  ██         ██    
+    ███████ ██   ██ ██   ██ ██   ██ ██   ██ ███████    ██    
+                                                             
+    
 
-# created: 2023-05-06T19:50:57.556Z
-# public key: age1qpr733mdcngf8ek8fn860uzwlgguude4n3eln8nttg3ssy95cuwq40phvd
-AGE-SECRET-KEY-1XES6VVUYXQP6U30X2PRRUKXCXHZ0UJ086DZUJ6M3ULJJVTQQMAYQULN3VZ
+Welcome to SharKey, a tool for recovering age keypairs from
+secret shares. To recover a secret keypair, enter your shares
+at the prompt below. Once the expected number of shares are entered,
+an attempt will be made to re-combine the shares and recover the
+keypair.
+
+If any shares are invalid, or unmatched with the others, an error
+message will be shown.
+
+Enter shares one at a time by typing or pasting them, pressing return after
+each one.
+
+To exit, press control-c.
+
+
+ ? share › E38P6S0000000YPWKARWBMXRJR10402H04QMVVZXEQ7NM7NSCHS97XHVMXTWV6YKAWCYYZ4WCDXGRK3WM8A5NG3XHEW0DTYYEA7RDR2YPGC05K93MBCKA68VVTX652201WQ6HTWJT32BS6A3FA752YMBY172VNWGQR
+ ? share › E38P6S0000000YPWKARWBMXRJR10402H0B8V6483HCRT9R27KA66T265B65K6S9DN7KH30K2KP2Z5CM2BKNA8FM3EN3FG590HHRQG7N09BKFRCYXBGKWQSZ54129RXNYY789C5BC5RX44SXXGHRAZ13N1TRD6ABE80
+
+Processing 2 shares...
+
+Success! The age keypair has been recovered.
+
+# created: 2023-05-16T18:54:40.000Z
+# public key: age1eml9qdxzpw27dgd8z83wl98r68gz430fmp387gr48guycen53ejqw2qvd8
+AGE-SECRET-KEY-1TU75FFFFWLK2ZZFLFHCLJL0RGKD4Z7733CH3NJ92FN9SP4EXU7HQQZS3PD
 ```
 
 ## Testing & Verification
@@ -216,16 +297,16 @@ If you run the `sharkey generate` command with a known good seed, you should see
 
 ### Test Case
 
-The `seed` value `aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i` should create an `age` identity with the following keys:
+The `seed` value `jO5MXtZs+b0ax9EwVZgE1m44cPS6TN8/wNiv798Bt/lj3igbpUh90SwlQ/0Xu6Fu` should create an `age` identity with the following keys:
 
 ```sh
-sharkey generate -t 2 -s 3 --seed aoU9iw/JH+nz2+JEGBrqBo0go5Kq08UCF+0Zq/jkDW38uuX3+S8QHTVAEETdOU3i
+sharkey generate -t 2 -s 3 --seed jO5MXtZs+b0ax9EwVZgE1m44cPS6TN8/wNiv798Bt/lj3igbpUh90SwlQ/0Xu6Fu
 ```
 
 | KEY   |  |
 | ------------|----------------------------------------------------------------|
-| `publicKey`   | `age1qpr733mdcngf8ek8fn860uzwlgguude4n3eln8nttg3ssy95cuwq40phvd` |
-| `secretKey`   | `AGE-SECRET-KEY-1XES6VVUYXQP6U30X2PRRUKXCXHZ0UJ086DZUJ6M3ULJJVTQQMAYQULN3VZ` |
+| `publicKey`   | `age1eml9qdxzpw27dgd8z83wl98r68gz430fmp387gr48guycen53ejqw2qvd8` |
+| `secretKey`   | `AGE-SECRET-KEY-1TU75FFFFWLK2ZZFLFHCLJL0RGKD4Z7733CH3NJ92FN9SP4EXU7HQQZS3PD` |
 
 Following this command with an execution of `sharkey combine` and entering `2` shares from the output of `sharkey generate` with that known seed should also display the same `publicKey` and `secretKey` values.
 

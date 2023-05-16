@@ -63,36 +63,24 @@ const VERSION = "0.0.3"
 const base32CrockfordRegex = /^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{32,256}$/
 
 /**
- * Converts a JavaScript Date object to a 16-byte Uint8Array.
+ * Converts the timestamp in seconds since epoch to a 16-byte Uint8Array encoding the timestamp and
+ * 8 bytes of random data.
  *
- * @param date - The Date object to convert.
- * @returns A 16-byte Uint8Array buffer containing the Unix timestamp in milliseconds.
+ * @param timestamp - The timestamp in milliseconds since the epoch.
+ * @returns A 16-byte Uint8Array buffer encoding the Unix timestamp in seconds and 8 bytes of random data.
  */
-function dateToUint8Array(date: Date): Uint8Array {
-  const unixTimestamp = BigInt(date.getTime())
-  const dataView = new DataView(new Uint8Array(8).buffer)
-  dataView.setBigInt64(0, unixTimestamp)
-
-  const paddedArray = new Uint8Array(16)
-  paddedArray.set(new Uint8Array(dataView.buffer))
-  return paddedArray
+function generateShareId(timestamp: number): Uint8Array {
+  const uint8Array = new Uint8Array(16);
+  const seconds = Math.floor(timestamp / 1000);
+  uint8Array.set(new Uint8Array(new BigUint64Array([BigInt(seconds)]).buffer), 0);
+  uint8Array.set(crypto.getRandomValues(new Uint8Array(8)), 8);
+  return uint8Array;
 }
 
-/**
- * Converts a 16-byte Uint8Array to a JavaScript Date object.
- *
- * @param uint8Array - The Uint8Array buffer to convert.
- * @returns A Date object representing the Unix timestamp in milliseconds.
- * @throws {Error} If the Uint8Array is not exactly 16 bytes long.
- */
-function uint8ArrayToDate(uint8Array: Uint8Array): Date {
-  if (uint8Array.byteLength !== 16) {
-    throw new Error("Uint8Array must have a length of 16 bytes")
-  }
-
-  const dataView = new DataView(uint8Array.buffer)
-  const unixTimestamp = Number(dataView.getBigUint64(0))
-  return new Date(unixTimestamp)
+function shareIdToDate(shareId: Uint8Array): Date {
+  const timestampSeconds = new BigUint64Array(shareId.buffer.slice(0, 8))[0];
+  const timestampMilliseconds = Number(timestampSeconds) * 1000;
+  return new Date(timestampMilliseconds);
 }
 
 /**
@@ -270,13 +258,13 @@ await new Command()
       decodedSeed ??
       crypto.getRandomValues(new Uint8Array(SEED_LENGTH + SALT_LENGTH))
     const seedCreatedAt = new Date()
-    const seedCreatedAtBytes = dateToUint8Array(seedCreatedAt)
+    const shareId = generateShareId(seedCreatedAt.getTime())
 
     const shares = await split(
       seed,
       options.threshold,
       options.shares,
-      seedCreatedAtBytes
+      shareId
     )
 
     const stretchedSeed = await stretchSeed(
@@ -311,19 +299,45 @@ age publicKey    ${identity.publicKey}
     console.log(``)
 
     shares.map((share, index) => {
+      console.log(colors.dim(`${'-' .repeat(40)} CUT HERE ${'-' .repeat(40)}`))
+      console.log(``)
+      console.log(colors.dim(`Share     : #${index + 1} of ${ readThreshold(share)}-of-${options.shares} scheme`))
+      console.log(colors.dim(`Timestamp : ${shareIdToDate(readIdentifier(share)).toISOString()}`))
+      console.log(colors.dim(`ID        : ${base32crockford.encode(readIdentifier(share).slice(8))}`))
+      console.log(colors.dim(`URL       : https://github.com/grempe/sharkey`))
+      console.log(colors.dim(`VERSION   : ${VERSION}`))
+
+      console.log(colors.dim(`
+
+INSTRUCTIONS:
+
+This is a secret share. Keep it safe, and don't provide it to anyone unless they
+can confirm knowledge of the timestamp and ID associated with this share. There are
+${options.shares} shares in total, any ${options.threshold} of which are needed to re-create the secret.
+
+You may have received additional instructions from the person who generated this
+share. If so, please carefully follow them.
+
+You should store this share in a safe place, and make sure it is backed up. You
+may want to store it electronically, and also print it for safekeeping. Wherever
+you store it, make sure unauthorized people cannot access it.
+
+The share is encoded in two different formats for convenience. Either one
+can be used to help re-create the secret.`))
+
+      console.log(``)
+      console.log(colors.dim(`Base32 Crockford Encoded Share`))
       console.log(colors.dim(`--`))
-      console.log(colors.dim(`Share ${index + 1} of ${options.shares}:`))
+      console.log(colors.yellow(base32crockford.encode(share)))
       console.log(colors.dim(`--`))
 
       console.log(``)
-      console.log(`Base32`)
-      console.log(colors.bold.yellow(base32crockford.encode(share)))
-
-      console.log(``)
-      console.log(`Passphrase`)
+      console.log(colors.dim(`Passphrase Encoded Share`))
+      console.log(colors.dim(`--`))
       const sharePassphrase = bytesToPassphrase(share).join(" ")
-      console.log(colors.bold.yellow(sharePassphrase))
-
+      console.log(colors.yellow(sharePassphrase))
+      console.log(colors.dim(`--`))
+      console.log(``)
       console.log(``)
     })
   })
@@ -361,10 +375,10 @@ at the prompt below. Once the expected number of shares are entered,
 an attempt will be made to re-combine the shares and recover the
 keypair.
 
-If any shares are invalid, unmatched with the others, an error
+If any shares are invalid, or unmatched with the others, an error
 message will be shown.
 
-Enter shares one at a time by typing or pasting, pressing return after
+Enter shares one at a time by typing or pasting them, pressing return after
 each one.
 
 To exit, press control-c.
@@ -443,10 +457,10 @@ To exit, press control-c.
       },
     ])
 
-    console.log(colors.dim(`\nProcessing...\n`))
+    console.log(colors.dim(`\nProcessing ${shares.length} shares...\n`))
 
     const seedCreatedAtBytes = readIdentifier(shares[0])
-    const seedCreatedAt = uint8ArrayToDate(seedCreatedAtBytes)
+    const seedCreatedAt = shareIdToDate(seedCreatedAtBytes)
 
     let seed
     try {
@@ -479,7 +493,8 @@ To exit, press control-c.
     }
     wipe(stretchedSeed)
 
-    // Success!
+    console.log(colors.green(`Success! The age keypair has been recovered.`))
+
     const output = `# created: ${seedCreatedAt.toISOString()}\n# public key: ${
       identity.publicKey
     }\n${identity.secretKey}\n`
